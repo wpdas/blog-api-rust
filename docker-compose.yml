@@ -1,0 +1,15 @@
+version: "3.5"
+
+services:
+  postgres:
+    # https://github.com/hasura/graphql-engine/blob/master/install-manifests/docker-compose-postgis/docker-compose.yaml
+    image: mdillon/postgis:11
+    container_name: "blog-postgres"
+    environment:
+      POSTGRES_DB: blog
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: 1234
+    volumes:
+      - "./data/postgres:/var/lib/postgresql/data"
+    ports:
+      - 5432:5432
