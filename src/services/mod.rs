@@ -1,15 +1,12 @@
-// extern crate diesel;
-// extern crate rocket;
-
 use diesel::{PgConnection, Connection, RunQueryDsl};
 use dotenvy::dotenv;
 use rocket::response::Debug;
 use rocket::response::status::Created;
-use rocket::{post, serde::json::Json};
+use rocket::{post, get, serde::json::Json};
 use serde::{Serialize, Deserialize};
 use std::env;
 
-use crate::schema;
+use crate::schema::{self, posts};
 use crate::models::Post;
 
 
@@ -25,6 +22,19 @@ pub struct NewPost {
   body: String,
 }
 
+#[derive(Serialize, Deserialize)]
+struct PostData {
+  id: i32,
+  title: String,
+  body: String,
+  published: bool,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct PostResponse {
+  posts: Vec<PostData>
+}
+
 type Result<T, E = Debug<diesel::result::Error>> = std::result::Result<T, E>;
 
 // POST
@@ -32,8 +42,13 @@ type Result<T, E = Debug<diesel::result::Error>> = std::result::Result<T, E>;
 pub fn create_post(post: Json<NewPost>) -> Result<Created<Json<NewPost>>> {
   let connection = &mut establish_connection_pg();
 
+  // Get count of posts (to determine the next post ID)
+  let results = self::schema::posts::dsl::posts.load::<Post>(connection)
+  .expect("Error loading posts");
+  let total_posts = results.len() as i32;
+
   let new_post = Post {
-    id: 1,
+    id: total_posts + 1,
     title: post.title.to_string(),
     body: post.body.to_string(),
     published: true,
@@ -48,4 +63,27 @@ pub fn create_post(post: Json<NewPost>) -> Result<Created<Json<NewPost>>> {
   Ok(Created::new("/").body(post))
 }
 
-// GET
+#[get("/posts")]
+pub fn list() -> Json<PostResponse> {
+  let connection = &mut establish_connection_pg();
+  let results = schema::posts::dsl::posts
+    .load::<Post>(connection)
+    .expect("Error loading posts");
+
+    let mut response_body = PostResponse {
+      posts: Vec::new(),
+    };
+
+    for post in results.iter() {
+      let post_data = PostData {
+        id: post.id,
+        title: post.title.to_string(),
+        body: post.body.to_string(),
+        published: post.published
+      };
+
+      response_body.posts.push(post_data);
+    }
+
+    Json(response_body)
+}

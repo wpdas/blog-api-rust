@@ -9,5 +9,5 @@ pub mod schema;
 fn rocket() -> _ {
     rocket::build()
         .mount("/", routes![services::create_post])
-        // .mount("list", routes![services::list])
+        .mount("/", routes![services::list])
 }
