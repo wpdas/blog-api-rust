@@ -6,7 +6,7 @@ use rocket::{post, get, serde::json::Json};
 use serde::{Serialize, Deserialize};
 use std::env;
 
-use crate::schema::{self, posts};
+use crate::schema::{posts};
 use crate::models::Post;
 
 
@@ -43,7 +43,7 @@ pub fn create_post(post: Json<NewPost>) -> Result<Created<Json<NewPost>>> {
   let connection = &mut establish_connection_pg();
 
   // Get count of posts (to determine the next post ID)
-  let results = self::schema::posts::dsl::posts.load::<Post>(connection)
+  let results = posts::dsl::posts.load::<Post>(connection)
   .expect("Error loading posts");
   let total_posts = results.len() as i32;
 
@@ -54,7 +54,7 @@ pub fn create_post(post: Json<NewPost>) -> Result<Created<Json<NewPost>>> {
     published: true,
   };
 
-  diesel::insert_into(self::schema::posts::dsl::posts)
+  diesel::insert_into(posts::dsl::posts)
     .values(&new_post)
     .execute(connection)
     .expect("Error saving new post");
@@ -66,7 +66,7 @@ pub fn create_post(post: Json<NewPost>) -> Result<Created<Json<NewPost>>> {
 #[get("/posts")]
 pub fn list() -> Json<PostResponse> {
   let connection = &mut establish_connection_pg();
-  let results = schema::posts::dsl::posts
+  let results = posts::dsl::posts
     .load::<Post>(connection)
     .expect("Error loading posts");
 
